@@ -1,5 +1,5 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting } from 'obsidian';
-
+import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
+import { BaseView } from './src/views/base_view';
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
@@ -19,7 +19,7 @@ export default class MyPlugin extends Plugin {
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('land-plot', 'Architect', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			new Notice('This is a notice!');
+			this.activateView(BaseView.VIEW_TYPE);
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -28,6 +28,8 @@ export default class MyPlugin extends Plugin {
 		const statusBarItemEl = this.addStatusBarItem();
 		statusBarItemEl.setText('Architect');
 
+        // This adds a view to the app
+        this.registerView(BaseView.VIEW_TYPE, (leaf) => new BaseView(leaf));
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'open-sample-modal-simple',
@@ -81,6 +83,24 @@ export default class MyPlugin extends Plugin {
 	onunload() {
 
 	}
+
+    async activateView(viewType: string) {
+        const {workspace} = this.app;
+
+        let leaf: WorkspaceLeaf | null = null
+        const leaves = workspace.getLeavesOfType(viewType);
+        if (leaves.length > 0) {
+            leaf = leaves[0];
+        } else {
+            leaf = workspace.getRightLeaf(false);
+            if (leaf) {
+                await leaf.setViewState({ type: viewType, active: true });
+            }
+        }
+        if (leaf) {
+            workspace.revealLeaf(leaf);
+        }
+    }
 
 	async loadSettings() {
 		this.settings = Object.assign({}, DEFAULT_SETTINGS, await this.loadData());
