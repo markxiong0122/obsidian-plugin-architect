@@ -20,12 +20,6 @@ export class BaseView extends ItemView {
 
   async onOpen(): Promise<void> {
     this.containerEl.empty();
-    this.containerEl.createEl("h1", { text: "ARCHITECT!" });
-
-    const content = this.containerEl.createEl("p", {
-      text: "hell yeah.",
-    });
-    content.style.marginTop = "20px";
   }
 
   async onClose(): Promise<void> {

@@ -1,5 +1,5 @@
-import { App, Editor, MarkdownView, Modal, Notice, Plugin, PluginSettingTab, Setting, WorkspaceLeaf } from 'obsidian';
-import { BaseView } from './src/views/base_view';
+import { App, Editor, MarkdownView, Modal, Plugin, PluginSettingTab, Setting } from 'obsidian';
+import { ChatView } from './src/views/chatView';
 // Remember to rename these classes and interfaces!
 
 interface MyPluginSettings {
@@ -16,10 +16,12 @@ export default class MyPlugin extends Plugin {
 	async onload() {
 		await this.loadSettings();
 
+        // register views
+        this.registerView(ChatView.VIEW_TYPE, (leaf) => new ChatView(leaf));
 		// This creates an icon in the left ribbon.
 		const ribbonIconEl = this.addRibbonIcon('land-plot', 'Architect', (evt: MouseEvent) => {
 			// Called when the user clicks the icon.
-			this.activateView(BaseView.VIEW_TYPE);
+			this.activateView(ChatView.VIEW_TYPE);
 		});
 		// Perform additional things with the ribbon
 		ribbonIconEl.addClass('my-plugin-ribbon-class');
@@ -29,7 +31,6 @@ export default class MyPlugin extends Plugin {
 		statusBarItemEl.setText('Architect');
 
         // This adds a view to the app
-        this.registerView(BaseView.VIEW_TYPE, (leaf) => new BaseView(leaf));
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
 			id: 'open-sample-modal-simple',
@@ -86,20 +87,18 @@ export default class MyPlugin extends Plugin {
 
     async activateView(viewType: string) {
         const {workspace} = this.app;
-
-        let leaf: WorkspaceLeaf | null = null
-        const leaves = workspace.getLeavesOfType(viewType);
-        if (leaves.length > 0) {
-            leaf = leaves[0];
-        } else {
-            leaf = workspace.getRightLeaf(false);
-            if (leaf) {
-                await leaf.setViewState({ type: viewType, active: true });
-            }
+        let leaf = workspace.getLeavesOfType(viewType)[0];
+        if (!leaf) {
+            const newLeaf = workspace.getRightLeaf(false);
+            if (!newLeaf) return;
+            leaf = newLeaf;
+            await leaf.setViewState({
+                type: viewType,
+                active: true
+            });
         }
-        if (leaf) {
-            workspace.revealLeaf(leaf);
-        }
+        workspace.revealLeaf(leaf);
+        await workspace.setActiveLeaf(leaf, true, true);
     }
 
 	async loadSettings() {
